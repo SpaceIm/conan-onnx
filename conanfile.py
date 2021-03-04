@@ -39,6 +39,8 @@ class OnnxConan(ConanFile):
     def configure(self):
         if self.options.shared:
             del self.options.fPIC
+        if self.settings.os == "Visual Studio" and self.options.shared:
+            raise ConanInvalidConfiguration("onnx shared is broken with Visual Studio")
 
     def requirements(self):
         self.requires("protobuf/3.13.0")
@@ -46,6 +48,10 @@ class OnnxConan(ConanFile):
     def source(self):
         tools.get(**self.conan_data["sources"][self.version])
         os.rename(self.name + "-" + self.version, self._source_subfolder)
+
+    def _patch_sources(self):
+        # No warnings as errors for Visual Studio also
+        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"), "/WX", "")
 
     def _configure_cmake(self):
         if self._cmake:
@@ -69,6 +75,7 @@ class OnnxConan(ConanFile):
         return self._cmake
 
     def build(self):
+        self._patch_sources()
         cmake = self._configure_cmake()
         cmake.build()
 
