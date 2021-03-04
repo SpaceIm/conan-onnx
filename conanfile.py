@@ -63,6 +63,8 @@ class OnnxConan(ConanFile):
         self._cmake.definitions["ONNX_ML"] = True
         self._cmake.definitions["ONNXIFI_DUMMY_BACKEND"] = False
         self._cmake.definitions["ONNX_VERIFY_PROTO3"] = tools.Version(self.deps_cpp_info["protobuf"].version).major == "3"
+        if self.settings.compiler.get_safe("runtime"):
+            self._cmake.definitions["ONNX_USE_MSVC_STATIC_RUNTIME"] = self.settings.compiler.runtime in ["MT", "MTd", "static"]
         self._cmake.configure()
         return self._cmake
 
