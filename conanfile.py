@@ -88,10 +88,7 @@ class OnnxConan(ConanFile):
         tools.rmdir(os.path.join(self.package_folder, "lib", "cmake"))
         self._create_cmake_module_alias_targets(
             os.path.join(self.package_folder, self._module_file_rel_path),
-            {
-                "onnx_proto": "ONNX::onnx_proto",
-                "onnx": "ONNX::onnx",
-            }
+            {component["target"]:"ONNX::{}".format(component["target"]) for component in self._onnx_components.values()}
         )
 
     @staticmethod
@@ -115,27 +112,56 @@ class OnnxConan(ConanFile):
         return os.path.join(self._module_subfolder,
                             "conan-official-{}-targets.cmake".format(self.name))
 
+    @property
+    def _onnx_components(self):
+        return {
+            "libonnx": {
+                "target": "onnx",
+                "libs": ["onnx"],
+                "defines": ["ONNX_NAMESPACE=onnx", "ONNX_ML=1"],
+                "requires": ["onnx_proto"]
+            },
+            "onnx_proto": {
+                "target": "onnx_proto",
+                "libs": ["onnx_proto"],
+                "defines": ["ONNX_NAMESPACE=onnx", "ONNX_ML=1"],
+                "requires": ["protobuf::libprotobuf"]
+            },
+            "onnxifi": {
+                "target": "onnxifi"
+            },
+            "onnxifi_dummy": {
+                "target": "onnxifi_dummy",
+                "libs": ["onnxifi_dummy"],
+                "requires": ["onnxifi"]
+            },
+            "onnxifi_loader": {
+                "target": "onnxifi_loader",
+                "libs": ["onnxifi_loader"],
+                "requires": ["onnxifi"]
+            },
+            "onnxifi_wrapper": {
+                "target": "onnxifi_wrapper"
+            }
+        }
+
     def package_info(self):
         self.cpp_info.names["cmake_find_package"] = "ONNX"
         self.cpp_info.names["cmake_find_package_multi"] = "ONNX"
 
+        def _register_components(components):
+            for comp_name, comp_values in components.items():
+                target = comp_values["target"]
+                libs = comp_values.get("libs", [])
+                defines = comp_values.get("defines", [])
+                requires = comp_values.get("requires", [])
+                self.cpp_info.components[comp_name].names["cmake_find_package"] = target
+                self.cpp_info.components[comp_name].names["cmake_find_package_multi"] = target
+                self.cpp_info.components[comp_name].builddirs.append(self._module_subfolder)
+                self.cpp_info.components[comp_name].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+                self.cpp_info.components[comp_name].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
+                self.cpp_info.components[comp_name].libs = libs
+                self.cpp_info.components[comp_name].defines = defines
+                self.cpp_info.components[comp_name].requires = requires
 
-        self.cpp_info.components["onnx_proto"].names["cmake_find_package"] = "onnx_proto"
-        self.cpp_info.components["onnx_proto"].names["cmake_find_package_multi"] = "onnx_proto"
-        self.cpp_info.components["onnx_proto"].builddirs.append(self._module_subfolder)
-        self.cpp_info.components["onnx_proto"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
-        self.cpp_info.components["onnx_proto"].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
-        self.cpp_info.components["onnx_proto"].libs = ["onnx_proto"]
-        self.cpp_info.components["onnx_proto"].defines = ["ONNX_NAMESPACE=onnx", "ONNX_ML=1"]
-        self.cpp_info.components["onnx_proto"].requires = ["protobuf::libprotobuf"]
-
-        self.cpp_info.components["libonnx"].names["cmake_find_package"] = "onnx"
-        self.cpp_info.components["libonnx"].names["cmake_find_package_multi"] = "onnx"
-        self.cpp_info.components["libonnx"].builddirs.append(self._module_subfolder)
-        self.cpp_info.components["libonnx"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
-        self.cpp_info.components["libonnx"].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
-        self.cpp_info.components["libonnx"].libs = ["onnx"]
-        self.cpp_info.components["libonnx"].defines = ["ONNX_NAMESPACE=onnx", "ONNX_ML=1"]
-        self.cpp_info.components["libonnx"].requires = ["onnx_proto"]
-
-        # TODO: add targets like onnxifi, onnxifi_dummy, onnxifi_loader and onnxifi_wrapper?
+        _register_components(self._onnx_components)
