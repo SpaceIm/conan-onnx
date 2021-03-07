@@ -39,6 +39,8 @@ class OnnxConan(ConanFile):
     def configure(self):
         if self.options.shared:
             del self.options.fPIC
+        if self.settings.compiler.get_safe("cppstd"):
+            tools.check_min_cppstd(self, 11)
         if self.settings.compiler == "Visual Studio" and self.options.shared:
             raise ConanInvalidConfiguration("onnx shared is broken with Visual Studio")
 
