@@ -58,6 +58,10 @@ class OnnxConan(ConanFile):
     def _patch_sources(self):
         # No warnings as errors for Visual Studio also
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"), "/WX", "")
+        # fix concurrent remove of *.proto3.* files
+        tools.replace_in_file(os.path.join(self._source_subfolder, "onnx", "gen_proto.py"),
+                              "pb3_files = glob.glob(os.path.join(porto3_dir, '*.proto3.*'))",
+                              "pb3_files = glob.glob(os.path.join(porto3_dir, '{}.*'.format(os.path.basename(proto3))))")
 
     def _configure_cmake(self):
         if self._cmake:
