@@ -54,6 +54,11 @@ class OnnxConan(ConanFile):
     def _patch_sources(self):
         # No warnings as errors for Visual Studio also
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"), "/WX", "")
+        # These files are generated at build time, remove them to not disturbe
+        # add_custom_command in upstream CMakeLists
+        for pattern in ["onnx-data.proto*", "onnx-ml.proto*", "onnx-operators-ml.proto*",
+                        "onnx-operators.proto*", "onnx.proto*"]:
+            tools.remove_files_by_mask(os.path.join(self.build_folder, self._source_subfolder), pattern)
 
     def _configure_cmake(self):
         if self._cmake:
