@@ -1,0 +1,29 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -347,16 +347,20 @@ if (MSVC)
+   else()
+     set(EXTRA_FLAGS "")
+   endif()
+-  if (BUILD_SHARED_LIBS OR ONNX_BUILD_MAIN_LIB)
++endif()
++
++# On non-MSVC, hide all symbols we don't need
++set_target_properties(onnx_proto PROPERTIES CXX_VISIBILITY_PRESET hidden)
++set_target_properties(onnx_proto PROPERTIES VISIBILITY_INLINES_HIDDEN 1)
++
++if (BUILD_SHARED_LIBS OR ONNX_BUILD_MAIN_LIB)
++  if(WIN32)
+     set(ONNX_API_DEFINE "-DONNX_API=__declspec(dllexport)")
+   else()
+-    set(ONNX_API_DEFINE "-DONNX_API=")
++    set(ONNX_API_DEFINE "-DONNX_API=__attribute__\(\(__visibility__\(\"default\"\)\)\)")
+   endif()
+ else()
+-  # On non-Windows, hide all symbols we don't need
+-  set(ONNX_API_DEFINE "-DONNX_API=__attribute__\(\(__visibility__\(\"default\"\)\)\)")
+-  set_target_properties(onnx_proto PROPERTIES CXX_VISIBILITY_PRESET hidden)
+-  set_target_properties(onnx_proto PROPERTIES VISIBILITY_INLINES_HIDDEN 1)
++  set(ONNX_API_DEFINE "-DONNX_API=")
+ endif()
+ target_compile_definitions(onnx_proto PRIVATE ${ONNX_API_DEFINE})
+ 

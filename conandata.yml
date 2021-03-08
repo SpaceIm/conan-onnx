@@ -6,3 +6,5 @@ patches:
   "1.8.1":
     - patch_file: "patches/fix-concurrent-proto3-remove.patch"
       base_path: "source_subfolder"
+    - patch_file: "patches/fix-mingw.patch"
+      base_path: "source_subfolder"
