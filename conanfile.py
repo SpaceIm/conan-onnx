@@ -32,6 +32,10 @@ class OnnxConan(ConanFile):
     def _source_subfolder(self):
         return "source_subfolder"
 
+    @property
+    def _build_subfolder(self):
+        return "build_subfolder"
+
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
@@ -54,11 +58,6 @@ class OnnxConan(ConanFile):
     def _patch_sources(self):
         # No warnings as errors for Visual Studio also
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"), "/WX", "")
-        # These files are generated at build time, remove them to not disturbe
-        # add_custom_command in upstream CMakeLists
-        for pattern in ["onnx-data.proto*", "onnx-ml.proto*", "onnx-operators-ml.proto*",
-                        "onnx-operators.proto*", "onnx.proto*"]:
-            tools.remove_files_by_mask(os.path.join(self.build_folder, self._source_subfolder), pattern)
 
     def _configure_cmake(self):
         if self._cmake:
@@ -78,7 +77,7 @@ class OnnxConan(ConanFile):
         self._cmake.definitions["ONNX_VERIFY_PROTO3"] = tools.Version(self.deps_cpp_info["protobuf"].version).major == "3"
         if self.settings.compiler.get_safe("runtime"):
             self._cmake.definitions["ONNX_USE_MSVC_STATIC_RUNTIME"] = str(self.settings.compiler.runtime) in ["MT", "MTd", "static"]
-        self._cmake.configure()
+        self._cmake.configure(build_folder=self._build_subfolder)
         return self._cmake
 
     def build(self):
